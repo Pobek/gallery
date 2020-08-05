@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,6 +15,7 @@ import (
 func SetContentTypeMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(respWriter http.ResponseWriter, req *http.Request) {
 		respWriter.Header().Set("Content-Type", "application/json")
+		log.Printf("%s -- %s", req.Method, req.RequestURI)
 		next.ServeHTTP(respWriter, req)
 	})
 }

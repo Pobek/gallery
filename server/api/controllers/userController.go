@@ -62,6 +62,12 @@ func (app *App) Login(respWriter http.ResponseWriter, req *http.Request) {
 		"status":  "Success",
 		"message": "Login successfully",
 	}
+	// if req.Method == "OPTIONS" {
+	// 	resp["status"] = "OPTIONS"
+	// 	resp["message"] = "POST, OPTIONS"
+	// 	responses.JSON(respWriter, http.StatusOK, resp)
+	// 	return
+	// }
 
 	user := &models.User{}
 	body, err := ioutil.ReadAll(req.Body)

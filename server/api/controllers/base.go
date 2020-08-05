@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -52,8 +53,12 @@ func (app *App) initRoutes() {
 
 // RunServer - starts the server
 func (app *App) RunServer() {
+	headersOk := handlers.AllowedHeaders([]string{"content-type"})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
 	log.Printf("Server starting on port 5000")
-	log.Fatal(http.ListenAndServe(":5000", app.Router))
+	log.Fatal(http.ListenAndServe(":5000", handlers.CORS(originsOk, headersOk, methodsOk)(app.Router)))
 }
 
 func home(respWriter http.ResponseWriter, req *http.Request) {
