@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/opentracing/opentracing-go"
 	"github.com/pobek/gallery/server/api/middlewares"
 	"github.com/pobek/gallery/server/api/models"
 	"github.com/pobek/gallery/server/api/responses"
@@ -21,7 +22,7 @@ type App struct {
 }
 
 // Init - initializes the application
-func (app *App) Init(DbHost, DbPort, DbUser, DbName, DbPassword string) {
+func (app *App) Init(DbHost, DbPort, DbUser, DbName, DbPassword string, tracer opentracing.Tracer) {
 	var err error
 	DBURI := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
 		DbHost,
@@ -30,6 +31,7 @@ func (app *App) Init(DbHost, DbPort, DbUser, DbName, DbPassword string) {
 		DbName,
 		DbPassword)
 
+	openDBConnectionSpan := tracer.StartSpan("open-db-connection")
 	app.DB, err = gorm.Open("postgres", DBURI)
 	if err != nil {
 		log.Fatalf("Cannot connect to db '%s' on host '%s'. Database connection error: %v", DbName, DbHost, err)
@@ -37,7 +39,16 @@ func (app *App) Init(DbHost, DbPort, DbUser, DbName, DbPassword string) {
 		log.Printf("Connected to database '%s' on host '%s'", DbName, DbHost)
 	}
 
+	defer openDBConnectionSpan.Finish()
+
+	DBMigrationSpan := tracer.StartSpan(
+		"db-migration",
+		opentracing.ChildOf(openDBConnectionSpan.Context()),
+	)
+
 	app.DB.Debug().AutoMigrate(&models.User{})
+
+	defer DBMigrationSpan.Finish()
 
 	app.Router = mux.NewRouter().StrictSlash(true)
 	app.initRoutes()
